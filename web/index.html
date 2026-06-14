@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>台股篩選</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --card: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --blue: #58a6ff;
+  --accent: #1f6feb;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 8px;
+  padding-top: env(safe-area-inset-top, 8px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  -webkit-text-size-adjust: 100%;
+}
+.header {
+  text-align: center;
+  padding: 12px 0 8px;
+}
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.header .date {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.header .count {
+  font-size: 13px;
+  color: var(--blue);
+  margin-top: 2px;
+}
+.rules {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  padding: 4px 8px 12px;
+  line-height: 1.4;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px 6px;
+  font-size: 14px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.section-header .dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-green { background: var(--green); }
+.dot-yellow { background: var(--yellow); }
+.dot-red { background: var(--red); }
+.stock-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+.stock-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.stock-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+.stock-code {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+.stock-close {
+  font-size: 13px;
+  color: var(--blue);
+  margin-left: 6px;
+  font-weight: 600;
+}
+.stock-rise {
+  font-size: 16px;
+  font-weight: 700;
+}
+.pos { color: var(--green); }
+.neg { color: var(--red); }
+.stock-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 2px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.stock-meta .label {
+  color: var(--muted);
+}
+.stock-meta .val {
+  color: var(--text);
+  font-weight: 500;
+}
+.stock-meta .val.pos, .stock-row2 .val.pos { color: var(--green); }
+.stock-meta .val.neg, .stock-row2 .val.neg { color: var(--red); }
+.stock-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.trust-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.trust-fill {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.updated {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 16px 0 8px;
+}
+.sort-bar {
+  display: flex;
+  gap: 6px;
+  padding: 4px 0 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.sort-btn {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.sort-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📋 台股篩選</h1>
+  <div class="date" id="scan-date">—</div>
+  <div class="count" id="scan-count">—</div>
+  <div class="count" id="market-turnover">—</div>
+</div>
+<!-- Rule text is rendered from data.json (single source of truth in the screener) -->
+<div class="rules" id="scan-rules">—</div>
+
+<div class="sort-bar">
+  <button class="sort-btn active" data-sort="default" onclick="sortBy('default', this)">預設</button>
+  <button class="sort-btn" data-sort="rise" onclick="sortBy('rise', this)">漲幅↓</button>
+  <button class="sort-btn" data-sort="weekly" onclick="sortBy('weekly', this)">週均↓</button>
+  <button class="sort-btn" data-sort="turnover" onclick="sortBy('turnover', this)">均額↓</button>
+  <button class="sort-btn" data-sort="trust" onclick="sortBy('trust', this)">投信%↓</button>
+  <button class="sort-btn" data-sort="margin" onclick="sortBy('margin', this)">融資/均額↓</button>
+  <button class="sort-btn" data-sort="dist" onclick="sortBy('dist', this)">乖離↓</button>
+  <button class="sort-btn" data-sort="mktcap" onclick="sortBy('mktcap', this)">市值↓</button>
+</div>
+
+<div id="content">
+  <p style="text-align:center;color:var(--muted);padding:40px 0;">載入中...</p>
+</div>
+
+<div class="updated" id="updated-time">—</div>
+
+<script>
+// ---- UI configuration (was scattered as magic numbers) --------------------
+const CONFIG = {
+  REFRESH_MS: 300000,   // auto-refresh interval (5 min)
+  TRUST_BAR_MAX: 25,    // 投信% value that fills the bar to 100%
+  MARGIN_WARN: 100,     // 融資/均額 above this is flagged red
+};
+
+// ---- Data contract (mirror of SCHEMA.md / screener/schema.py) -------------
+// Drift surfaces loudly in the console but never breaks rendering.
+const REQUIRED_FIELDS = ['code','name','close','mktcap_b','start_date','streak','rise_pct','avg_wk','dist20','turnover_m','tier'];
+
+let DATA = null;
+let currentSort = 'default';
+
+function validateSchema(data) {
+  if (!data || !Array.isArray(data.stocks)) {
+    console.error('[schema] data.json is missing a stocks[] array');
+    return;
+  }
+  const missing = {};
+  data.stocks.forEach(s => REQUIRED_FIELDS.forEach(f => {
+    if (s[f] === undefined || s[f] === null) missing[f] = (missing[f] || 0) + 1;
+  }));
+  if (Object.keys(missing).length) {
+    console.warn('[schema] required field(s) missing/null — UI shows "—":', missing);
+  }
+  ['rules', 'market_turnover_total_b'].forEach(f => {
+    if (data[f] === undefined) console.warn(`[schema] root field '${f}' missing`);
+  });
+}
+
+// ---- Null-safe formatting helpers -----------------------------------------
+function asNum(v) {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
+}
+function fmtPct(v, dec, withSign) {
+  const n = asNum(v);
+  if (n === null) return '—';
+  const sign = withSign && n >= 0 ? '+' : '';
+  return `${sign}${n.toFixed(dec)}%`;
+}
+function signClass(v) {
+  const n = asNum(v);
+  if (n === null) return '';
+  return n >= 0 ? 'pos' : 'neg';
+}
+
+function loadData() {
+  fetch('data.json?' + Date.now())
+    .then(r => r.json())
+    .then(d => {
+      DATA = d;
+      validateSchema(d);
+      document.getElementById('scan-date').textContent = d.date || '—';
+      document.getElementById('scan-count').textContent = `共 ${d.stocks.length} 檔`;
+      const mt = d.market_turnover_total_b != null ? d.market_turnover_total_b.toLocaleString() : '—';
+      document.getElementById('market-turnover').textContent = `當日總成交額: ${mt} 億`;
+      document.getElementById('scan-rules').textContent = d.rules || '';
+      document.getElementById('updated-time').textContent = `更新: ${d.updated || '—'}`;
+      render();
+    })
+    .catch((e) => {
+      console.error('[load] data.json fetch/parse failed:', e);
+      document.getElementById('content').innerHTML =
+        '<p style="text-align:center;color:var(--red);padding:40px 0;">載入失敗</p>';
+    });
+}
+
+function sortBy(key, btn) {
+  currentSort = key;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  render();
+}
+
+function render() {
+  if (!DATA) return;
+  let stocks = [...DATA.stocks];
+
+  if (currentSort === 'rise') stocks.sort((a, b) => (asNum(b.rise_pct) || 0) - (asNum(a.rise_pct) || 0));
+  else if (currentSort === 'weekly') stocks.sort((a, b) => (asNum(b.avg_wk) || 0) - (asNum(a.avg_wk) || 0));
+  else if (currentSort === 'turnover') stocks.sort((a, b) => (asNum(b.turnover_m) || 0) - (asNum(a.turnover_m) || 0));
+  else if (currentSort === 'trust') stocks.sort((a, b) => (asNum(b.trust_now) || 0) - (asNum(a.trust_now) || 0));
+  else if (currentSort === 'margin') stocks.sort((a, b) => (asNum(b.margin_pct_turnover) || 0) - (asNum(a.margin_pct_turnover) || 0));
+  else if (currentSort === 'dist') stocks.sort((a, b) => (asNum(b.dist20) || 0) - (asNum(a.dist20) || 0));
+  else if (currentSort === 'mktcap') stocks.sort((a, b) => (asNum(b.mktcap_b) || 0) - (asNum(a.mktcap_b) || 0));
+
+  let html = '';
+
+  if (currentSort === 'default') {
+    const groups = [
+      { label: '剛起漲 (<1個月)', dot: 'dot-green', tier: 1 },
+      { label: '中段加速 (1~3個月)', dot: 'dot-yellow', tier: 2 },
+      { label: '長線主升 (>3個月)', dot: 'dot-red', tier: 3 },
+    ];
+    for (const g of groups) {
+      const items = stocks.filter(s => s.tier === g.tier);
+      if (!items.length) continue;
+      html += `<div class="section-header"><span class="dot ${g.dot}"></span>${g.label} — ${items.length} 檔</div>`;
+      items.forEach(s => html += card(s));
+    }
+  } else {
+    stocks.forEach(s => html += card(s));
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function card(s) {
+  const trustStr = (s.trust_start != null && s.trust_now != null) ? `${s.trust_start}→${s.trust_now}%` : '—';
+  const marginVal = asNum(s.margin_pct_turnover);
+  const marginStr = marginVal != null ? `${marginVal.toFixed(2)}%` : '—';
+  const marginClass = (marginVal != null && marginVal > CONFIG.MARGIN_WARN) ? 'neg' : '';
+  const trustPct = Math.min((asNum(s.trust_now) || 0) / CONFIG.TRUST_BAR_MAX * 100, 100);
+  const mcStr = s.mktcap_b ? `${s.mktcap_b}B` : '—';
+  const closeNum = asNum(s.close);
+  const closeStr = closeNum != null ? closeNum.toFixed(closeNum >= 100 ? 0 : 1) : '—';
+  const turnoverStr = asNum(s.turnover_m) != null ? `${Math.round(s.turnover_m).toLocaleString()}M` : '—';
+
+  return `<div class="stock-card">
+    <div class="stock-top">
+      <div><span class="stock-name">${s.name}</span><span class="stock-close">${closeStr}</span><span class="stock-code">${s.code}</span></div>
+      <div class="stock-rise ${signClass(s.rise_pct)}">${fmtPct(s.rise_pct, 1, true)}</div>
+    </div>
+    <div class="stock-meta">
+      <div><span class="label">起漲</span> <span class="val">${s.start_date || '—'}</span></div>
+      <div><span class="label">持續</span> <span class="val">${s.streak != null ? s.streak + '日' : '—'}</span></div>
+      <div><span class="label">市值</span> <span class="val">${mcStr}</span></div>
+      <div><span class="label">週均</span> <span class="val ${signClass(s.avg_wk)}">${fmtPct(s.avg_wk, 2, true)}</span></div>
+      <div><span class="label">乖離</span> <span class="val ${signClass(s.dist20)}">${fmtPct(s.dist20, 1, true)}</span></div>
+      <div><span class="label">均額</span> <span class="val">${turnoverStr}</span></div>
+    </div>
+    <div class="stock-row2">
+      <div><span class="label">投信</span> <span class="val">${trustStr}</span></div>
+      <div><span class="label">融資/均額</span> <span class="val ${marginClass}">${marginStr}</span></div>
+    </div>
+    ${s.trust_now ? `<div class="trust-bar"><div class="trust-fill" style="width:${trustPct}%"></div></div>` : ''}
+  </div>`;
+}
+
+loadData();
+setInterval(loadData, CONFIG.REFRESH_MS);
+</script>
+</body>
+</html>

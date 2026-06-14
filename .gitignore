@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# T86 (三大法人) cache — regenerated/cached, not source.
+# The directory is kept (data/t86/.gitkeep); its contents are ignored.
+data/t86/*.json
+
+# Local scan artifacts
+/tmp/tw_stock_scan_result.txt
+scan_result.txt
+
+# OS
+.DS_Store
+
+# NOTE: web/data.json is intentionally NOT ignored.
+# GitHub Pages serves it statically, so it must stay committed.

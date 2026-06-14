@@ -1,0 +1,3 @@
+# Dev/test dependencies. Installs runtime deps too.
+-r requirements.txt
+pytest>=7

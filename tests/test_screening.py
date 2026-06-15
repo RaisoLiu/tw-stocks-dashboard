@@ -137,3 +137,11 @@ def test_screen_one_rejects_downtrend():
     cfg = ScreeningConfig()
     df = _uptrend_df(start=200.0, end=100.0)  # EMAs never align upward
     assert screen_one(df, "9999", "測試", shares=10**9, config=cfg) is None
+
+
+def test_screen_one_rejects_low_price():
+    cfg = ScreeningConfig()
+    # close ends at 90 (≤ min_price 100); the higher volume keeps it above the
+    # turnover floor so ONLY the price gate can reject it.
+    df = _uptrend_df(start=50.0, end=90.0, volume=3e7)
+    assert screen_one(df, "9999", "測試", shares=10**9, config=cfg) is None

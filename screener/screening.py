@@ -97,6 +97,8 @@ def screen_one(df, code, name, shares, config) -> Optional[dict]:
     streak = streak_len(mask.values)
 
     close = float(close_ser.iloc[-1])
+    if close <= config.min_price:
+        return None
     e_mid = float(close_ser.ewm(span=config.ema_spans[1], adjust=False).mean().iloc[-1])
     dist20 = round(dist_pct(close, e_mid), 1)
 

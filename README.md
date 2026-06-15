@@ -24,9 +24,11 @@ A stock is listed when **all** of these hold (defaults; all live in
 | Rule | Meaning | Default |
 |---|---|---|
 | `5EMA > 20EMA > 60EMA` for ≥ N days | short/medium/long moving averages stacked in up-trend order | ≥ 5 days |
-| 起漲週均 > X% | average weekly return since the trend started | > 2% |
+| 起漲週均 > X% | average weekly return since the trend started | > 3% |
 | 均額 > Y | 30-day average daily turnover (liquidity floor) | > 2,000M NTD |
 | 市值 > Z | market capitalisation (size floor; 0/unknown is kept) | > 100B NTD |
+| 股價 > P | latest close price floor | > 100 NTD |
+| 投信持股上升 ≥ T | 投信 holding % rose from 起漲日 to now (accumulation) | ≥ 0.1pp |
 
 Matches are bucketed into three tiers by how recently the trend started:
 

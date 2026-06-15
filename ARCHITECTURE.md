@@ -54,12 +54,15 @@ The pure helpers in `screening.py` carry the testable logic and need no network;
   that price is trending up across time-frames. Requiring it for
   `min_align_days` (5) trailing days filters out one-day noise. `streak` counts
   how long the alignment has held; the first day of the streak is 起漲日.
-* **Weekly-avg return > 2%.** `mean(daily % change over the streak) × 5`. Keeps
+* **Weekly-avg return > 3%.** `mean(daily % change over the streak) × 5`. Keeps
   only trends with real momentum, not slow grinds.
 * **Turnover floor (30-day avg > 2,000M).** Liquidity gate — avoids thin stocks
   you can’t actually trade.
 * **Market-cap floor (> 100B).** Size gate. Stocks with unknown share count
   (`mktcap_b == 0`) are *kept* rather than dropped (matches the original).
+* **Price floor (> 100 NTD).** Drops low-priced names regardless of market cap.
+* **投信 rise (≥ 0.1pp).** Keeps only stocks whose 投信 holding % grew from
+  起漲日 to now — i.e. 投信 accumulated *into* the move (see below).
 * **Tiers (30 / 90 days).** Group by how fresh the trend is so 剛起漲 vs
   長線主升 are visually separated.
 

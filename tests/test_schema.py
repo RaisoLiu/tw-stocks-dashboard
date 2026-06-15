@@ -55,7 +55,8 @@ def test_scan_result_structure():
 
 def test_rules_text_default():
     assert ScreeningConfig().rules_text() == (
-        "5EMA>20EMA>60EMA ≥5日 + 起漲週均>2% + 均額>2000M + 市值>100B"
+        "5EMA>20EMA>60EMA ≥5日 + 起漲週均>3% + 均額>2000M + "
+        "市值>100B + 股價>100 + 投信持股上升≥0.1%"
     )
 
 

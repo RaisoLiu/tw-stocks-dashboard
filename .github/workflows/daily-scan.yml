@@ -9,9 +9,8 @@ name: Daily Stock Scan
 
 on:
   schedule:
-    # 22:00 UTC on weekdays = 06:00 (TW, next day) — late enough that the day's
-    # 三大法人 (T86) and 融資 (MI_MARGN) data have all published. Adjust as needed.
-    - cron: "0 22 * * 1-5"
+    # 21:00 UTC = 05:00 Asia/Taipei.
+    - cron: "0 21 * * *"
   workflow_dispatch: {}   # allow manual runs from the Actions tab
 
 # Don't let a slow run overlap the next scheduled one.
